@@ -6,7 +6,8 @@
   (:export :limit
 	   :once
 	   :interval
-	   :chain
+	   :throttle-and
+	   :throttle-or
 	   :with-throttle
 	   :defun-throttled
 	   :reset-throttle-state))

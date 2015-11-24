@@ -27,25 +27,63 @@
 		    current-time
 		    previous-time))))))
 
-(defun chain (first-throttle second-throttle &rest rest)
-  (let ((throttles (make-array (+ 2 (length rest))
-			       :initial-contents (nconc
-						  `(,first-throttle
-						    ,second-throttle) rest))))
+(defun throttle-and (first-throttle second-throttle &rest rest)  
+  (let* ((throttles-list (nconc `(,first-throttle ,second-throttle) rest))
+	 (throttles (make-array (+ 2 (length rest)) :initial-contents throttles-list)))
     (lambda (state)
-      (let* ((state (or state (make-array (length throttles)
-					  :initial-element nil)))
-	     (chained-result t))
+      (let* ((state (or state (make-array (length throttles) :initial-element nil)))
+	     (and-result t))
 	(loop
-	   while chained-result
-	   for idx from 0 below (length throttles)
+	   while and-result
+	   for idx below (length throttles)
 	   for throttle across throttles
 	   do
 	     (multiple-value-bind (result next-state)
 		 (funcall throttle (aref state idx))
-	       (setf chained-result result
+	       (setf and-result result
 		     (aref state idx) next-state)))
-	(values chained-result
+	(values and-result
+		state)))))
+
+(defun make-throttle-or-state (throttles)
+  (make-array (length throttles)
+	      :initial-contents
+	      (loop
+		 for i below (length throttles)
+		 for throttle across throttles
+		 collect
+		   (multiple-value-bind (_ state)
+		       (funcall throttle nil)
+		     (declare (ignore _))
+		     (if (zerop i)
+			 nil
+			 state)))))
+
+(defun throttle-or (first-throttle second-throttle &rest rest)
+  (let* ((throttles-list (nreverse (nconc `(,first-throttle ,second-throttle) rest)))
+	 (throttles (make-array (+ 2 (length rest)) :initial-contents throttles-list)))
+    (lambda (state)
+      (let* ((state (or state (make-throttle-or-state throttles)))
+	     (or-result nil))
+	(loop
+	   while (not or-result)
+	   for idx below (length throttles)
+	   for throttle across throttles
+	   do
+	     (multiple-value-bind (result next-state)
+		 (funcall throttle (aref state idx))
+	       (setf or-result result
+		     (aref state idx) next-state))
+	   finally
+	     (when or-result
+	       (loop
+		  for i below idx
+		  do
+		    (setf (aref state i) (multiple-value-bind (_ state)
+					     (funcall (aref throttles i) nil)
+					   (declare (ignore _))
+					   state)))))
+	(values or-result
 		state)))))
 
 (defparameter *throttle-states* (make-hash-table))
