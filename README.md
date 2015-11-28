@@ -43,22 +43,18 @@ You can use `INTERVAL` to limit the rate of code execution.
 It's possible to `THROTTLE-AND` throttles.
 
 ```lisp
-...
-(with-throttle (throttle-and (interval 1000) (limit 3)) strict-login (user password)
+(defun-throttled (throttle-and (interval 1000) (limit 3)) strict-login (user password)
   (if (auth user password)
     "Welcome!"
     "Careful."))
-...
 ```
 
 And also `THROTTLE-OR`.
 
 ```lisp
-...
 ; can be executed 3 times a day
-(with-throttle (throttle-or (interval 1000) (limit 3)) send-email (recipient)
+(defun-throttled (throttle-or (interval 1000) (limit 3)) send-email (recipient)
 	(email recipient "Hello"))
-...
 ```
 
 ## Values returned by `WITH-THROTTLE`
