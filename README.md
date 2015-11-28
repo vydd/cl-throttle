@@ -4,7 +4,7 @@ This library introduces throttles to Common Lisp.
 
 Throttles solve the problem of maintaining state for some types of branching code and keeping track of function calls when rate limiting is needed.
 
-## Examples
+## Examples (WORK IN PROGRESS)
 
 ### `(limit n)`, `(once)`
 
@@ -40,14 +40,24 @@ You can use `INTERVAL` to limit the rate of code execution.
     "Go away."))
 ```
 
-It's possible to `CHAIN` throttles.
+It's possible to `THROTTLE-AND` throttles.
 
 ```lisp
 ...
-(with-throttle (chain (interval 1000) (limit 3)) strict-login (user password)
+(with-throttle (throttle-and (interval 1000) (limit 3)) strict-login (user password)
   (if (auth user password)
     "Welcome!"
     "Careful."))
+...
+```
+
+And also `THROTTLE-OR`.
+
+```lisp
+...
+; can be executed 3 times a day
+(with-throttle (throttle-or (interval 1000) (limit 3)) send-email (recipient)
+	(email recipient "Hello"))
 ...
 ```
 
